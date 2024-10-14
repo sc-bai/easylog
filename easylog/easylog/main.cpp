@@ -170,7 +170,8 @@ int main(int argc, char* argv[])
 	// initLog(argc, argv);
 
 	initLog(0, nullptr);
-	
+	LOG_FUNCTION();
+
 	// 正常写入
 	LOG(INFO) << " info log.";
 	LOG(WARNING) << " warning log.";
@@ -178,6 +179,7 @@ int main(int argc, char* argv[])
 	LOG(ERROR) << " error log.";
 	// LOG(FATAL) << "fatal log."; // 会中断程序
 	LOG(UDP) << " udp log.";
+	
 
 	// 判断写入
 	int a = 0, b = 1;
