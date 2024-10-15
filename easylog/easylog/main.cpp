@@ -63,11 +63,9 @@ class NetworkLogDispatchCallback : public el::LogDispatchCallback {
 public:
 	void handle(const el::LogDispatchData* data) noexcept override {
 		// 将日志数据发送到网络的逻辑
-		// 这里只是一个示例，实际中你可能需要使用网络库（如 Boost.Asio）来发送数据
-		std::cout << "Sending to network: type->" << (int)data->logMessage()->level() << ",data->" << data->logMessage()->message() << std::endl;
-
-		if (data->logMessage()->level() == el::Level::Debug) {
-
+		//std::cout << "Sending to network: type->" << (int)data->logMessage()->level() << ",data->" << data->logMessage()->message() << std::endl;
+		if (data->logMessage()->level() == el::Level::UDP) {
+			// udp 
 			return;
 		}
 	}
@@ -117,20 +115,21 @@ void initLog(int argc, char* argv[]) {
 		//el::Loggers::reconfigureLogger("default", defaultConf);
 		//el::Loggers::reconfigureAllLoggers(defaultConf);
 
-		defaultConf.set(el::Level::Debug, el::ConfigurationType::Filename, logDebugFile);
+		defaultConf.set(el::Level::Debug, el::ConfigurationType::Filename, logInfoFile);
 		defaultConf.set(el::Level::Info, el::ConfigurationType::Filename, logInfoFile);
-		defaultConf.set(el::Level::Warning, el::ConfigurationType::Filename, logWarningFile);
+		defaultConf.set(el::Level::Warning, el::ConfigurationType::Filename, logInfoFile);
 		defaultConf.set(el::Level::Error, el::ConfigurationType::Filename, logErrorFile);
-		defaultConf.set(el::Level::Fatal, el::ConfigurationType::Filename, logFatalFile);
-		defaultConf.set(el::Level::UDP, el::ConfigurationType::Filename, logUDPFile); // network
+		defaultConf.set(el::Level::Fatal, el::ConfigurationType::Filename, logInfoFile);
+		defaultConf.set(el::Level::UDP, el::ConfigurationType::Filename, logInfoFile); // network
 
 		el::Loggers::reconfigureLogger("default", defaultConf);
 	}
 
-	// LOG_UDP("hello");
-	LOG(UDP) << "udp";
 	LOG(INFO) << "*****************************************";
 	LOG(INFO) << "app start.";
+	LOG(ERROR) << "*****************************************";
+	LOG(ERROR) << "app start.";
+	/*
 	LOG(DEBUG) << "*****************************************";
 	LOG(DEBUG) << "app start.";
 	LOG(WARNING) << "*****************************************";
@@ -139,6 +138,7 @@ void initLog(int argc, char* argv[]) {
 	LOG(ERROR) << "app start.";
 	LOG(FATAL) << "*****************************************";
 	LOG(FATAL) << "app start.";
+	*/
 }
 
 /*
@@ -146,6 +146,7 @@ void initLog(int argc, char* argv[]) {
 */
 void PerformanceTest()
 {
+	LOG_FUNCTION(); // 记录函数的进入和离开
 	// TIMED_xxx 默认INFO级别
 
 	// TIMED_FUNC会统计其后续所有代码的执行时间
@@ -170,7 +171,7 @@ int main(int argc, char* argv[])
 	// initLog(argc, argv);
 
 	initLog(0, nullptr);
-	LOG_FUNCTION();
+	LOG_FUNCTION(); // 记录函数的进入和离开
 
 	// 正常写入
 	LOG(INFO) << " info log.";
@@ -180,6 +181,11 @@ int main(int argc, char* argv[])
 	// LOG(FATAL) << "fatal log."; // 会中断程序
 	LOG(UDP) << " udp log.";
 	
+	// printf format
+	LOG_PRINT_N(" info log with printf format.");
+	LOG_PRINT_E(" info log with printf format.%d:", 666);
+	LOG_PRINT(INFO, "this is a info test.%s", "info messing.");
+	LOG_PRINT(ERROR, "this is a err test.%s", "error messing.");
 
 	// 判断写入
 	int a = 0, b = 1;
@@ -189,4 +195,5 @@ int main(int argc, char* argv[])
 	// 性能追踪
 	PerformanceTest();
     std::cout << "Hello World!\n";
+	return 0;
 }
