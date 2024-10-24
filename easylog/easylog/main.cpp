@@ -7,6 +7,7 @@
 #include <chrono>
 
 #include "easylog.hpp"
+INITIALIZE_EASYLOGGINGPP
 
 static std::string get_current_time() {
 	auto now = std::chrono::system_clock::now();
@@ -62,11 +63,19 @@ void DeleteOldFiles(const std::string& path, int oldDays, bool isRoot) {
 class NetworkLogDispatchCallback : public el::LogDispatchCallback {
 public:
 	void handle(const el::LogDispatchData* data) noexcept override {
-		// 将日志数据发送到网络的逻辑
+		
 		//std::cout << "Sending to network: type->" << (int)data->logMessage()->level() << ",data->" << data->logMessage()->message() << std::endl;
+		if (data->logMessage()->logger()->id() == "error") {
+			return;
+		}
+		// 将日志数据发送到网络的逻辑
 		if (data->logMessage()->level() == el::Level::UDP) {
 			// udp 
 			return;
+		}
+		// 单独写入error文件
+		else if (data->logMessage()->level() == el::Level::Error) {
+			CLOG(ERROR, "error") << data->logMessage()->message();
 		}
 	}
 };
@@ -115,20 +124,47 @@ void initLog(int argc, char* argv[]) {
 		//el::Loggers::reconfigureLogger("default", defaultConf);
 		//el::Loggers::reconfigureAllLoggers(defaultConf);
 
+		// 不同的级别写入不同文件
+		/*
+		defaultConf.set(el::Level::Global, el::ConfigurationType::Filename, logInfoFile);
+		defaultConf.set(el::Level::Error, el::ConfigurationType::Filename, logErrorFile);
 		defaultConf.set(el::Level::Debug, el::ConfigurationType::Filename, logInfoFile);
 		defaultConf.set(el::Level::Info, el::ConfigurationType::Filename, logInfoFile);
 		defaultConf.set(el::Level::Warning, el::ConfigurationType::Filename, logInfoFile);
-		defaultConf.set(el::Level::Error, el::ConfigurationType::Filename, logErrorFile);
+		defaultConf.set(el::Level::Error, el::ConfigurationType::Filename, logInfoFile);
 		defaultConf.set(el::Level::Fatal, el::ConfigurationType::Filename, logInfoFile);
 		defaultConf.set(el::Level::UDP, el::ConfigurationType::Filename, logInfoFile); // network
-
 		el::Loggers::reconfigureLogger("default", defaultConf);
+		*/
+		
+		// 设置全局日志文件
+		defaultConf.set(el::Level::Global, el::ConfigurationType::Filename, logInfoFile);
+		defaultConf.set(el::Level::Error, el::ConfigurationType::Filename, logInfoFile); // 写入全局日志文件
+		//el::Loggers::reconfigureAllLoggers(defaultConf);
+
+
+		// 配置错误日志记录器，用于记录 ERROR 级别的日志
+		el::Configurations errorConf;
+		//errorConf.setToDefault(el::Level::Error);
+		errorConf.set(el::Level::Error, el::ConfigurationType::Enabled, "true");
+		errorConf.set(el::Level::Error, el::ConfigurationType::Filename, logErrorFile);
+		errorConf.set(el::Level::Error, el::ConfigurationType::ToStandardOutput, std::string(LOG_TO_STANDARD_OUTPUT));
+		errorConf.set(el::Level::Error, el::ConfigurationType::MaxLogFileSize, std::to_string(MAX_lOG_FILE_SIZE));
+		//el::Loggers::reconfigureLogger("error", errorConf);
+
+		// 应用通用配置
+		el::Loggers::reconfigureLogger("default", defaultConf);
+		el::Loggers::reconfigureLogger("error", errorConf);
 	}
 
 	LOG(INFO) << "*****************************************";
 	LOG(INFO) << "app start.";
 	LOG(ERROR) << "*****************************************";
 	LOG(ERROR) << "app start.";
+
+	LOG(INFO) << "你好";
+	LOG(INFO) << std::string("通用！").c_str();
+
 	/*
 	LOG(DEBUG) << "*****************************************";
 	LOG(DEBUG) << "app start.";
@@ -165,7 +201,7 @@ void PerformanceTest()
 
 	Sleep(100);
 }
-
+#include <string>
 int main(int argc, char* argv[])
 {
 	// initLog(argc, argv);
@@ -180,7 +216,7 @@ int main(int argc, char* argv[])
 	LOG(ERROR) << " error log.";
 	// LOG(FATAL) << "fatal log."; // 会中断程序
 	LOG(UDP) << " udp log.";
-	
+
 	// printf format
 	LOG_PRINT_N(" info log with printf format.");
 	LOG_PRINT_E(" info log with printf format.%d:", 666);
